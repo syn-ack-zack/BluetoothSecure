@@ -26,7 +26,7 @@
     <dimen name="vertical_page_margin">@dimen/margin_medium</dimen>
     <!-- From: file:/home/universe/AndroidStudioProjects/BluetoothSecure/Application/src/main/res/values/base-strings.xml -->
     <eat-comment/>
-    <string name="app_name">BluetoothChat</string>
+    <string name="app_name">BluetoothSecure</string>
     <!-- From: file:/home/universe/AndroidStudioProjects/BluetoothSecure/Application/src/main/res/values/strings.xml -->
     <eat-comment/>
     <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
@@ -38,15 +38,7 @@
     <string name="intro_message">
         <![CDATA[
         
-            
-            This application allows two Android devices to carry out two-way text chat over
-            Bluetooth. It demonstrates all the fundamental Bluetooth API capabilites, such as:
-              (1) Scanning for other Bluetooth devices
-              (2) Querying the local Bluetooth adapter for paired Bluetooth devices
-              (3) Establishing RFCOMM channels/sockets
-              (4) Connecting to a remote device
-              (5) Transfering data over Bluetooth
-            
+            This application will demonstrate secure bluetooth file transfer using Diffie Hellman Key Exchange
         
         ]]>
     </string>
