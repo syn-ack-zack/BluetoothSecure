@@ -9,6 +9,48 @@
         <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-e63960e672a84f834d1a877bc9309e3e0cf77194.jar" />
     </item>
     <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/com.android.support/cardview-v7/21.0.2/classes.jar"
+        jumboMode="false"
+        revision="21.1.1"
+        sha1="b017100da14f9c158c9f5f2f508333c224b24a7c">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-535a1d18fd2fb9b2f87efbdeeea8e302fd7e6330.jar" />
+    </item>
+    <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/BluetoothSecure/FilePicker/unspecified/classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="2ab45413d1a64c4c31cb64ebb263d47a8303d463">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-e0e16b29cf62f1eb8d3ed4d728d9afea02fa96a2.jar" />
+    </item>
+    <item
+        jar="/home/universe/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/21.0.2/support-annotations-21.0.2.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="99373741f99a0556ee293c41e8faa1ca3ae8a4e6">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/support-annotations-21.0.2-5b26b8580720d9a2acc3e77a57ffed2f5324a7a2.jar" />
+    </item>
+    <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/com.android.support/gridlayout-v7/21.0.2/classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="9742ced04aafd9ac97dd2c66c1aa0e32d2ae7e54">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-c30a45aab0f2d16ab405209b16fc47f27f3ddac0.jar" />
+    </item>
+    <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/BluetoothSecure/FilePicker/unspecified/libs/json_simple-1.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="5e303a03d04e6788dddfa3655272580ae0fc13bb">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/json_simple-1.1-9e22f1f9e022ad3d1973c986cf46774944204446.jar" />
+    </item>
+    <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothChat/Application/build/intermediates/exploded-aar/com.android.support/support-v4/21.0.2/classes.jar"
+        jumboMode="false"
+        revision="21.1.1"
+        sha1="d1bf02de1c56d942e7a9d093b8610ba1ef4128e3">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothChat/Application/build/intermediates/pre-dexed/debug/classes-755d6e7b8076ded3b3064011bc16a12752f8b2cc.jar" />
+    </item>
+    <item
         jar="/home/universe/AndroidStudioProjects/BluetoothChat/Application/build/intermediates/exploded-aar/com.android.support/cardview-v7/21.0.2/classes.jar"
         jumboMode="false"
         revision="21.1.1"
@@ -23,11 +65,18 @@
         <dex dex="/home/universe/AndroidStudioProjects/BluetoothChat/Application/build/intermediates/pre-dexed/debug/internal_impl-21.0.2-9b33e546cb7bc9d3e46a750bc472cd4105e7ca3b.jar" />
     </item>
     <item
-        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/com.android.support/cardview-v7/21.0.2/classes.jar"
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/com.android.support/support-v4/21.0.2/libs/internal_impl-21.0.2.jar"
         jumboMode="false"
-        revision="21.1.1"
-        sha1="b017100da14f9c158c9f5f2f508333c224b24a7c">
-        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-535a1d18fd2fb9b2f87efbdeeea8e302fd7e6330.jar" />
+        revision="21.1.2"
+        sha1="962e8b12569c56dbdcf8367eb4eac8bb129cd18f">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/internal_impl-21.0.2-897ede74120275641aa2fc7b952379c2138cd59b.jar" />
+    </item>
+    <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/BluetoothSecure/FilePicker/unspecified/libs/dropbox-android-sdk-1.6.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="4811e0fdb7909dc3c386acbb4594a53a26e84956">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/dropbox-android-sdk-1.6.1-e5ca37919298ddfd5264f9aa6fd0ebab690a03ff.jar" />
     </item>
     <item
         jar="/home/universe/AndroidStudioProjects/BluetoothChat/Application/build/intermediates/exploded-aar/com.android.support/gridlayout-v7/21.0.2/classes.jar"
@@ -44,6 +93,13 @@
         <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-c30a45aab0f2d16ab405209b16fc47f27f3ddac0.jar" />
     </item>
     <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/com.android.support/cardview-v7/21.0.2/classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="b017100da14f9c158c9f5f2f508333c224b24a7c">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-535a1d18fd2fb9b2f87efbdeeea8e302fd7e6330.jar" />
+    </item>
+    <item
         jar="/home/universe/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/21.0.2/support-annotations-21.0.2.jar"
         jumboMode="false"
         revision="21.1.1"
@@ -58,11 +114,25 @@
         <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/internal_impl-21.0.2-897ede74120275641aa2fc7b952379c2138cd59b.jar" />
     </item>
     <item
-        jar="/home/universe/AndroidStudioProjects/BluetoothChat/Application/build/intermediates/exploded-aar/com.android.support/support-v4/21.0.2/classes.jar"
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/com.android.support/support-v4/21.0.2/classes.jar"
         jumboMode="false"
-        revision="21.1.1"
+        revision="21.1.2"
         sha1="d1bf02de1c56d942e7a9d093b8610ba1ef4128e3">
-        <dex dex="/home/universe/AndroidStudioProjects/BluetoothChat/Application/build/intermediates/pre-dexed/debug/classes-755d6e7b8076ded3b3064011bc16a12752f8b2cc.jar" />
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-e63960e672a84f834d1a877bc9309e3e0cf77194.jar" />
+    </item>
+    <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/BluetoothSecure/library/unspecified/classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="3e12d73a2363c7e35340ae4c8c1118d85dd71871">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-e07783ab151f7aff7193b455f41feabb71b932a1.jar" />
+    </item>
+    <item
+        jar="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/exploded-aar/BluetoothSecure/FilePicker/unspecified/libs/httpmime-4.0.3.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="dd1973851926925e02d0bbdf4ec0f7435d8292ce">
+        <dex dex="/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/httpmime-4.0.3-19f5cf8a292c19778da8caebc59416f9011b0c7b.jar" />
     </item>
 
 </items>

@@ -1,2 +1,3 @@
-include 'Application'
-include 'libraries/aFileChooser'
+include 'Application', ':library', ':FilePicker'
+project(':library').projectDir = new File('libraries/NoNonsense-FilePicker/library')
+project(':FilePicker').projectDir = new File('libraries/NoNonsense-FilePicker/sample')

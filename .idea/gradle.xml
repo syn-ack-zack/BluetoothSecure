@@ -10,7 +10,8 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/Application" />
-            <option value="$PROJECT_DIR$/libraries/aFileChooser" />
+            <option value="$PROJECT_DIR$/libraries/NoNonsense-FilePicker/library" />
+            <option value="$PROJECT_DIR$/libraries/NoNonsense-FilePicker/sample" />
           </set>
         </option>
       </GradleProjectSettings>

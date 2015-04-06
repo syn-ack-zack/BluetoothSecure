@@ -16,6 +16,7 @@
 
 package com.example.android.bluetoothchat;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
 import android.view.Menu;
@@ -23,6 +24,7 @@ import android.view.MenuItem;
 import android.widget.ViewAnimator;
 
 import com.example.android.common.activities.SampleActivityBase;
+import com.nononsenseapps.filepicker.FilePickerActivity;
 
 /**
  * A simple launcher activity containing a summary sample description, sample log and a custom
@@ -48,6 +50,15 @@ public class MainActivity extends SampleActivityBase {
             BluetoothChatFragment fragment = new BluetoothChatFragment();
             transaction.replace(R.id.sample_content_fragment, fragment);
             transaction.commit();
+
+            // This works if you defined the intent filter
+            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+
+            // Set these depending on your use case. These are the defaults.
+            i.putExtra(FilePickerActivity.EXTRA_ALLOW_MULTIPLE, false);
+            i.putExtra(FilePickerActivity.EXTRA_ALLOW_CREATE_DIR, false);
+            i.putExtra(FilePickerActivity.EXTRA_MODE, FilePickerActivity.MODE_FILE);
+            startActivityForResult(i, 0);
         }
     }
 

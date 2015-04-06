@@ -1,0 +1,43 @@
+<!--
+  Copyright (c) 2014 Jonas Kalderstam
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">NoNonsense File Picker</string>
+    <string name="new_folder">New folder</string>
+    <string name="create_folder_error">Failed to create folder</string>
+    <string name="name">Name</string>
+    <string name="go_back">Go back</string>
+    <string name="select_something_first">Please select something first</string>
+
+    <plurals
+        name="select_dir">
+        <item quantity="one">Select directory</item>
+        <item quantity="other">Select directories</item>
+    </plurals>
+
+    <plurals
+        name="select_file">
+        <item quantity="one">Select file</item>
+        <item quantity="other">Select files</item>
+    </plurals>
+
+    <plurals
+        name="select_dir_or_file">
+        <item quantity="one">Select directory or file</item>
+        <item quantity="other">Select directories or files</item>
+    </plurals>
+</resources>

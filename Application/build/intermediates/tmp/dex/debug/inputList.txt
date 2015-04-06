@@ -1,6 +1,7 @@
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/classes/debug
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/support-annotations-21.0.2-5b26b8580720d9a2acc3e77a57ffed2f5324a7a2.jar
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-535a1d18fd2fb9b2f87efbdeeea8e302fd7e6330.jar
+/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-e07783ab151f7aff7193b455f41feabb71b932a1.jar
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-c30a45aab0f2d16ab405209b16fc47f27f3ddac0.jar
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/internal_impl-21.0.2-897ede74120275641aa2fc7b952379c2138cd59b.jar
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-e63960e672a84f834d1a877bc9309e3e0cf77194.jar

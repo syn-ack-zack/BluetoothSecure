@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From: file:/home/universe/AndroidStudioProjects/BluetoothSecure/libraries/NoNonsense-FilePicker/sample/src/main/res/values/dimens.xml -->
+    <eat-comment/>
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <!-- From: file:/home/universe/AndroidStudioProjects/BluetoothSecure/libraries/NoNonsense-FilePicker/sample/src/main/res/values/strings.xml -->
+    <eat-comment/>
+    <string name="action_settings">Settings</string>
+    <string name="app_name">@string/title_activity_no_nonsense_file_picker</string>
+    <string name="title_activity_no_nonsense_file_picker">
+        NoNonsenseFilePicker Sample</string>
+    <!-- From: file:/home/universe/AndroidStudioProjects/BluetoothSecure/libraries/NoNonsense-FilePicker/sample/src/main/res/values/styles.xml -->
+    <eat-comment/>
+    <style name="SampleTheme" parent="android:Theme.Holo.Light.DarkActionBar"/>
+</resources>

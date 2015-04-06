@@ -4,7 +4,8 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Application/Application.iml" filepath="$PROJECT_DIR$/Application/Application.iml" />
       <module fileurl="file://$PROJECT_DIR$/BluetoothSecure.iml" filepath="$PROJECT_DIR$/BluetoothSecure.iml" />
-      <module fileurl="file://$PROJECT_DIR$/libraries/aFileChooser/libraries_aFileChooser.iml" filepath="$PROJECT_DIR$/libraries/aFileChooser/libraries_aFileChooser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libraries/NoNonsense-FilePicker/sample/FilePicker.iml" filepath="$PROJECT_DIR$/libraries/NoNonsense-FilePicker/sample/FilePicker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libraries/NoNonsense-FilePicker/library/library.iml" filepath="$PROJECT_DIR$/libraries/NoNonsense-FilePicker/library/library.iml" />
     </modules>
   </component>
 </project>
