@@ -24,9 +24,15 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -153,6 +159,7 @@ public class BluetoothChatService {
         mConnectThread.start();
         setState(STATE_CONNECTING);
     }
+
 
     /**
      * Start the ConnectedThread to begin managing a Bluetooth connection
@@ -453,18 +460,36 @@ public class BluetoothChatService {
 
         public void run() {
 
-            byte[] buffer = new byte[1024];
-            int bytes;
-
+            byte[] buffer = null;
+            boolean fileComplete = false;
+            boolean streamStart = false;
+            List<Byte> fileBuffer = new ArrayList<Byte>();
+            byte[] bLength = new byte[4];
+            int length = 0;
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
-                    // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
+                    // Read from the IlnputStream
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    if(mmInStream.available() > 0){
+                        if(streamStart == false){
+                            streamStart = true;
+                            mmInStream.read(bLength);
+                            length = ByteBuffer.wrap(bLength).getInt();
+                        }
+                        else{
+                            buffer = new byte[length];
+                            mmInStream.read(buffer);
+                            fileComplete = true;
+                        }
+                    }
 
-                    // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(Constants.MESSAGE_READ, bytes, -1, buffer)
-                            .sendToTarget();
+                    if(buffer != null && buffer.length > 0 && fileComplete == true){
+                        mHandler.obtainMessage(Constants.MESSAGE_READ, buffer.length, -1, buffer)
+                                .sendToTarget();
+                        fileComplete = false;
+                        length = 0;
+                    }
                 } catch (IOException e) {
 
                     connectionLost();
@@ -484,9 +509,9 @@ public class BluetoothChatService {
             try {
                 mmOutStream.write(buffer);
 
-                // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer)
-                        .sendToTarget();
+//                // Share the sent message back to the UI Activity
+//                mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer)
+//                        .sendToTarget();
             } catch (IOException e) {
 
             }

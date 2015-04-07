@@ -16,17 +16,23 @@
 
 package com.example.android.bluetoothchat;
 
+import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ClipData;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -42,6 +48,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.nononsenseapps.filepicker.FilePickerActivity;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+
 /**
  * This fragment controls Bluetooth to communicate with other devices.
  */
@@ -53,11 +67,13 @@ public class BluetoothChatFragment extends Fragment {
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
     private static final int REQUEST_CONNECT_DEVICE_INSECURE = 2;
     private static final int REQUEST_ENABLE_BT = 3;
+    private static final int FILE_CHOOSEN = 4;
 
     // Layout Views
     private ListView mConversationView;
     private EditText mOutEditText;
     private Button mSendButton;
+    private Button chooseFile;
 
     /**
      * Name of the connected device
@@ -84,6 +100,8 @@ public class BluetoothChatFragment extends Fragment {
      */
     private BluetoothChatService mChatService = null;
 
+    private File userFile = null;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,6 +115,8 @@ public class BluetoothChatFragment extends Fragment {
             Toast.makeText(activity, "Bluetooth is not available", Toast.LENGTH_LONG).show();
             activity.finish();
         }
+
+
     }
 
 
@@ -146,9 +166,13 @@ public class BluetoothChatFragment extends Fragment {
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        mConversationView = (ListView) view.findViewById(R.id.in);
-        mOutEditText = (EditText) view.findViewById(R.id.edit_text_out);
-        mSendButton = (Button) view.findViewById(R.id.button_send);
+//        mConversationView = (ListView) view.findViewById(R.id.in);
+//        mOutEditText = (EditText) view.findViewById(R.id.edit_text_out);
+          mSendButton = (Button) view.findViewById(R.id.button_send);
+          chooseFile=(Button) view.findViewById(R.id.fileButton);
+
+
+
     }
 
     /**
@@ -159,23 +183,36 @@ public class BluetoothChatFragment extends Fragment {
         // Initialize the array adapter for the conversation thread
         mConversationArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.message);
 
-        mConversationView.setAdapter(mConversationArrayAdapter);
+//        mConversationView.setAdapter(mConversationArrayAdapter);
 
         // Initialize the compose field with a listener for the return key
-        mOutEditText.setOnEditorActionListener(mWriteListener);
+//        mOutEditText.setOnEditorActionListener(mWriteListener);
 
         // Initialize the send button with a listener that for click events
         mSendButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 // Send a message using content of the edit text widget
                 View view = getView();
-                if (null != view) {
-                    TextView textView = (TextView) view.findViewById(R.id.edit_text_out);
-                    String message = textView.getText().toString();
-                    sendMessage(message);
+                if (null != view && userFile != null) {
+                    sendMessage(userFile);
                 }
             }
         });
+
+        chooseFile.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                // This works if you defined the intent filter
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+
+                // Set these depending on your use case. These are the defaults.
+                i.putExtra(FilePickerActivity.EXTRA_MODE, FilePickerActivity.MODE_FILE);
+                startActivityForResult(i, FILE_CHOOSEN);
+            }
+        });
+
 
         // Initialize the BluetoothChatService to perform bluetooth connections
         mChatService = new BluetoothChatService(getActivity(), mHandler);
@@ -199,9 +236,8 @@ public class BluetoothChatFragment extends Fragment {
     /**
      * Sends a message.
      *
-     * @param message A string of text to send.
      */
-    private void sendMessage(String message) {
+    private void sendMessage(File userFile) {
         // Check that we're actually connected before trying anything
         if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
             Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_SHORT).show();
@@ -209,31 +245,41 @@ public class BluetoothChatFragment extends Fragment {
         }
 
         // Check that there's actually something to send
-        if (message.length() > 0) {
+        if (userFile.exists()) {
             // Get the message bytes and tell the BluetoothChatService to write
-            byte[] send = message.getBytes();
-            mChatService.write(send);
-
-            // Reset out string buffer to zero and clear the edit text field
-            mOutStringBuffer.setLength(0);
-            mOutEditText.setText(mOutStringBuffer);
+            byte[] bFile = new byte[(int) userFile.length()];
+            int length = (int) userFile.length();
+            ByteBuffer b = ByteBuffer.allocate(4);
+            b.putInt(length);
+            byte[] bResult = b.array();
+            FileInputStream fileInputStream=null;
+            try {
+                fileInputStream = new FileInputStream(userFile);
+                fileInputStream.read(bFile);
+                fileInputStream.close();
+                mChatService.write(bResult);
+                mChatService.write(bFile);
+            }
+            catch(Exception e){
+                    e.printStackTrace();
+            }
         }
     }
 
-    /**
-     * The action listener for the EditText widget, to listen for the return key
-     */
-    private TextView.OnEditorActionListener mWriteListener
-            = new TextView.OnEditorActionListener() {
-        public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
-            // If the action is a key-up event on the return key, send the message
-            if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
-                String message = view.getText().toString();
-                sendMessage(message);
-            }
-            return true;
-        }
-    };
+//    /**
+//     * The action listener for the EditText widget, to listen for the return key
+//     */
+//    private TextView.OnEditorActionListener mWriteListener
+//            = new TextView.OnEditorActionListener() {
+//        public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
+//            // If the action is a key-up event on the return key, send the message
+//            if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
+//                String message = view.getText().toString();
+//                sendMessage(message);
+//            }
+//            return true;
+//        }
+//    };
 
     /**
      * Updates the status on the action bar.
@@ -298,11 +344,26 @@ public class BluetoothChatFragment extends Fragment {
                     String writeMessage = new String(writeBuf);
                     mConversationArrayAdapter.add("Me:  " + writeMessage);
                     break;
+
                 case Constants.MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;
                     // construct a string from the valid bytes in the buffer
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-                    mConversationArrayAdapter.add(mConnectedDeviceName + ":  " + readMessage);
+                    try {
+                        //convert array of bytes into file
+                        File sdCard = Environment.getExternalStorageDirectory();
+                        File dir = new File (sdCard.getAbsolutePath() + "/BluetoothSecureFiles/");
+                        dir.mkdirs();
+                        File file = new File(dir, readBuf.toString().substring(0,5) + ".jpg");
+
+                        FileOutputStream f = new FileOutputStream(file);
+                        f.write(readBuf);
+                        f.close();
+                        Toast.makeText(activity, readBuf.toString().substring(0,5) + ".jpg saved to " +
+                                sdCard.getAbsolutePath() + "/BluetoothSecureFiles/",
+                                Toast.LENGTH_SHORT).show();
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
                     break;
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
@@ -347,6 +408,11 @@ public class BluetoothChatFragment extends Fragment {
                             Toast.LENGTH_SHORT).show();
                     getActivity().finish();
                 }
+            case FILE_CHOOSEN:
+                if (requestCode == 4 && resultCode == Activity.RESULT_OK) {
+                        Uri uri = data.getData();
+                        userFile = new File(uri.getPath());
+                    }
         }
     }
 
