@@ -461,24 +461,45 @@ public class BluetoothChatService {
         public void run() {
 
             byte[] buffer = null;
+            byte[] fileNameBuffer = null;
+
             boolean fileComplete = false;
-            boolean streamStart = false;
+            boolean nameLength = false;
+            boolean fileLength = false;
+            boolean fileNameSent = false;
+            boolean nameRead = false;
             List<Byte> fileBuffer = new ArrayList<Byte>();
-            byte[] bLength = new byte[4];
-            int length = 0;
+            byte[] bFileLength = new byte[4];
+            byte[] bNameLength = new byte[4];
+            int nLength = 0;
+            int fLength = 0;
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
                     // Read from the IlnputStream
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     if(mmInStream.available() > 0){
-                        if(streamStart == false){
-                            streamStart = true;
-                            mmInStream.read(bLength);
-                            length = ByteBuffer.wrap(bLength).getInt();
+                        if(nameLength == false){
+                            nameLength = true;
+                            mmInStream.read(bNameLength);
+                            nLength = ByteBuffer.wrap(bNameLength).getInt();
+                        }
+                        else if(fileLength == false){
+
+                            if(nameRead == true) {
+                                fileLength = true;
+                                mmInStream.read(bFileLength);
+                                fLength = ByteBuffer.wrap(bFileLength).getInt();
+                            }
+                            else{
+                                nameRead = true;
+                                fileNameBuffer = new byte[nLength];
+                                mmInStream.read(fileNameBuffer);
+                            }
+
                         }
                         else{
-                            buffer = new byte[length];
+                            buffer = new byte[fLength];
                             mmInStream.read(buffer);
                             fileComplete = true;
                         }
@@ -488,7 +509,14 @@ public class BluetoothChatService {
                         mHandler.obtainMessage(Constants.MESSAGE_READ, buffer.length, -1, buffer)
                                 .sendToTarget();
                         fileComplete = false;
-                        length = 0;
+                        fileNameSent = false;
+                        fLength = 0;
+                    }
+                    if(fileNameBuffer != null && fileNameBuffer.length > 0 && fileNameSent == false){
+                        mHandler.obtainMessage(Constants.FILE_NAME, fileNameBuffer.length, -1, fileNameBuffer)
+                                .sendToTarget();
+                        fileNameSent = true;
+                        nLength = 0;
                     }
                 } catch (IOException e) {
 

@@ -101,6 +101,7 @@ public class BluetoothChatFragment extends Fragment {
     private BluetoothChatService mChatService = null;
 
     private File userFile = null;
+    private String fileName = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -250,14 +251,23 @@ public class BluetoothChatFragment extends Fragment {
             byte[] bFile = new byte[(int) userFile.length()];
             int length = (int) userFile.length();
             ByteBuffer b = ByteBuffer.allocate(4);
+            ByteBuffer nameLength = ByteBuffer.allocate(4);
+            nameLength.putInt(fileName.length());
             b.putInt(length);
+            byte[] bNameLength = nameLength.array();
             byte[] bResult = b.array();
             FileInputStream fileInputStream=null;
             try {
                 fileInputStream = new FileInputStream(userFile);
                 fileInputStream.read(bFile);
                 fileInputStream.close();
+                //Send length of file Name
+                mChatService.write(bNameLength);
+                //Send file name
+                mChatService.write(fileName.getBytes());
+                //Send length of file
                 mChatService.write(bResult);
+                //Send file
                 mChatService.write(bFile);
             }
             catch(Exception e){
@@ -339,10 +349,7 @@ public class BluetoothChatFragment extends Fragment {
                     }
                     break;
                 case Constants.MESSAGE_WRITE:
-                    byte[] writeBuf = (byte[]) msg.obj;
-                    // construct a string from the buffer
-                    String writeMessage = new String(writeBuf);
-                    mConversationArrayAdapter.add("Me:  " + writeMessage);
+
                     break;
 
                 case Constants.MESSAGE_READ:
@@ -353,12 +360,12 @@ public class BluetoothChatFragment extends Fragment {
                         File sdCard = Environment.getExternalStorageDirectory();
                         File dir = new File (sdCard.getAbsolutePath() + "/BluetoothSecureFiles/");
                         dir.mkdirs();
-                        File file = new File(dir, readBuf.toString().substring(0,5) + ".jpg");
+                        File file = new File(dir, fileName);
 
                         FileOutputStream f = new FileOutputStream(file);
                         f.write(readBuf);
                         f.close();
-                        Toast.makeText(activity, readBuf.toString().substring(0,5) + ".jpg saved to " +
+                        Toast.makeText(activity, fileName + " saved to " +
                                 sdCard.getAbsolutePath() + "/BluetoothSecureFiles/",
                                 Toast.LENGTH_SHORT).show();
                     }catch(Exception e){
@@ -379,6 +386,9 @@ public class BluetoothChatFragment extends Fragment {
                                 Toast.LENGTH_SHORT).show();
                     }
                     break;
+                case Constants.FILE_NAME:
+                    byte[] bReceivedFile = (byte[]) msg.obj;
+                    fileName = bReceivedFile.toString();
             }
         }
     };
@@ -411,6 +421,8 @@ public class BluetoothChatFragment extends Fragment {
             case FILE_CHOOSEN:
                 if (requestCode == 4 && resultCode == Activity.RESULT_OK) {
                         Uri uri = data.getData();
+                        int index = uri.getPath().lastIndexOf("/");
+                        fileName = uri.getPath().substring(index);
                         userFile = new File(uri.getPath());
                     }
         }
