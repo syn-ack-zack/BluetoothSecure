@@ -5,3 +5,4 @@
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-c30a45aab0f2d16ab405209b16fc47f27f3ddac0.jar
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/internal_impl-21.0.2-897ede74120275641aa2fc7b952379c2138cd59b.jar
 /home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/classes-e63960e672a84f834d1a877bc9309e3e0cf77194.jar
+/home/universe/AndroidStudioProjects/BluetoothSecure/Application/build/intermediates/pre-dexed/debug/guava-18.0-1642480eb324cd78a63b1cf20b16d0ed4dd453b5.jar

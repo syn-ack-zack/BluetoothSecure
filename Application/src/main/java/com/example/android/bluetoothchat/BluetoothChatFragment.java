@@ -50,6 +50,7 @@ import android.widget.Toast;
 
 import com.nononsenseapps.filepicker.FilePickerActivity;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -249,26 +250,25 @@ public class BluetoothChatFragment extends Fragment {
         if (userFile.exists()) {
             // Get the message bytes and tell the BluetoothChatService to write
             byte[] bFile = new byte[(int) userFile.length()];
-            int length = (int) userFile.length();
-            ByteBuffer b = ByteBuffer.allocate(4);
-            ByteBuffer nameLength = ByteBuffer.allocate(4);
-            nameLength.putInt(fileName.length());
-            b.putInt(length);
-            byte[] bNameLength = nameLength.array();
-            byte[] bResult = b.array();
-            FileInputStream fileInputStream=null;
+            FileInputStream fileInputStream;
             try {
                 fileInputStream = new FileInputStream(userFile);
                 fileInputStream.read(bFile);
                 fileInputStream.close();
-                //Send length of file Name
-                mChatService.write(bNameLength);
-                //Send file name
-                mChatService.write(fileName.getBytes());
-                //Send length of file
-                mChatService.write(bResult);
-                //Send file
-                mChatService.write(bFile);
+
+                byte[] delimit = "PAYLOAD".getBytes();
+                byte[] eof = "EOF".getBytes();
+
+                int size = bFile.length + fileName.length() + delimit.length + eof.length;
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream(size);
+                outputStream.flush();
+                outputStream.write(fileName.getBytes());
+                outputStream.write(delimit);
+                outputStream.write(bFile);
+                outputStream.write(eof);
+                byte output[] = outputStream.toByteArray();
+                mChatService.write(output);
+                outputStream.flush();
             }
             catch(Exception e){
                     e.printStackTrace();
@@ -388,7 +388,7 @@ public class BluetoothChatFragment extends Fragment {
                     break;
                 case Constants.FILE_NAME:
                     byte[] bReceivedFile = (byte[]) msg.obj;
-                    fileName = bReceivedFile.toString();
+                    fileName = new String(bReceivedFile);
             }
         }
     };
@@ -422,7 +422,7 @@ public class BluetoothChatFragment extends Fragment {
                 if (requestCode == 4 && resultCode == Activity.RESULT_OK) {
                         Uri uri = data.getData();
                         int index = uri.getPath().lastIndexOf("/");
-                        fileName = uri.getPath().substring(index);
+                        fileName = uri.getPath().substring(index + 1);
                         userFile = new File(uri.getPath());
                     }
         }

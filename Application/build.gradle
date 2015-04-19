@@ -22,6 +22,7 @@ dependencies {
     compile 'com.android.support:gridlayout-v7:21.0.2'
     compile 'com.android.support:cardview-v7:21.0.2'
     compile project(':library')
+    compile files('/home/universe/AndroidStudioProjects/BluetoothSecure/libraries/guava-18.0.jar')
 }
 
 // The sample build uses multiple directories to

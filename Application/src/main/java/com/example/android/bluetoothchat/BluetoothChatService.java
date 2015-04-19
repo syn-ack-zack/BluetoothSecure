@@ -25,13 +25,22 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Closeables;
+
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -458,65 +467,74 @@ public class BluetoothChatService {
             mmOutStream = tmpOut;
         }
 
+        public int findArray(byte[] largeArray, byte[] subArray) {
+            if (subArray.length == 0) {
+                return -1;
+            }
+            int limit = largeArray.length - subArray.length;
+            next:
+            for (int i = 0; i <= limit; i++) {
+                for (int j = 0; j < subArray.length; j++) {
+                    if (subArray[j] != largeArray[i+j]) {
+                        continue next;
+                    }
+                }
+        /* Sub array found - return its index */
+                return i;
+            }
+    /* Return default value */
+            return -1;
+        }
+
         public void run() {
 
-            byte[] buffer = null;
-            byte[] fileNameBuffer = null;
-
-            boolean fileComplete = false;
-            boolean nameLength = false;
-            boolean fileLength = false;
             boolean fileNameSent = false;
-            boolean nameRead = false;
-            List<Byte> fileBuffer = new ArrayList<Byte>();
-            byte[] bFileLength = new byte[4];
-            byte[] bNameLength = new byte[4];
-            int nLength = 0;
-            int fLength = 0;
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
                     // Read from the IlnputStream
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    List<Byte> bufferList = new ArrayList<Byte>();
                     if(mmInStream.available() > 0){
-                        if(nameLength == false){
-                            nameLength = true;
-                            mmInStream.read(bNameLength);
-                            nLength = ByteBuffer.wrap(bNameLength).getInt();
-                        }
-                        else if(fileLength == false){
-
-                            if(nameRead == true) {
-                                fileLength = true;
-                                mmInStream.read(bFileLength);
-                                fLength = ByteBuffer.wrap(bFileLength).getInt();
+                        while(mmInStream.available() > 0){
+                                byte[] buf = new byte[mmInStream.available()];
+                                mmInStream.read(buf);
+                                out.write(buf);
                             }
-                            else{
-                                nameRead = true;
-                                fileNameBuffer = new byte[nLength];
-                                mmInStream.read(fileNameBuffer);
-                            }
-
-                        }
-                        else{
-                            buffer = new byte[fLength];
-                            mmInStream.read(buffer);
-                            fileComplete = true;
-                        }
                     }
 
-                    if(buffer != null && buffer.length > 0 && fileComplete == true){
-                        mHandler.obtainMessage(Constants.MESSAGE_READ, buffer.length, -1, buffer)
-                                .sendToTarget();
-                        fileComplete = false;
-                        fileNameSent = false;
-                        fLength = 0;
-                    }
-                    if(fileNameBuffer != null && fileNameBuffer.length > 0 && fileNameSent == false){
-                        mHandler.obtainMessage(Constants.FILE_NAME, fileNameBuffer.length, -1, fileNameBuffer)
-                                .sendToTarget();
-                        fileNameSent = true;
-                        nLength = 0;
+                    byte[] fileByte = out.toByteArray();
+
+                    byte[] pay = "PAYLOAD".getBytes();
+                    byte[] eof = "EOF".getBytes();
+
+                    int nameIndex = findArray(fileByte,pay);
+                    int eofIndex = findArray(fileByte,eof);
+
+                    if(nameIndex != -1 && eofIndex != -1) {
+
+                        int fileIndex = nameIndex + 7;
+                        byte[] name = new byte[nameIndex];
+                        for (int i = 0; i < nameIndex; i++) {
+                            name[i] = fileByte[i];
+                        }
+
+                        byte[] file = Arrays.copyOfRange(fileByte, fileIndex, eofIndex);
+
+//                        byte[] name = bufferList.substring(0, nameIndex).getBytes();
+//                        byte[] file = bufferList.substring(fileIndex, eofIndex).getBytes();
+
+                        if (name != null && name.length > 0) {
+                            mHandler.obtainMessage(Constants.FILE_NAME, name.length, -1, name)
+                                    .sendToTarget();
+                        }
+                        if (file != null && file.length > 0 && fileNameSent == false) {
+                            mHandler.obtainMessage(Constants.MESSAGE_READ, file.length, -1, file)
+                                    .sendToTarget();
+                            fileNameSent = true;
+                            out.reset();
+                        }
+
                     }
                 } catch (IOException e) {
 
