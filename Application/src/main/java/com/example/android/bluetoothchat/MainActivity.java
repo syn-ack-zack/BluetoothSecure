@@ -40,9 +40,6 @@ public class MainActivity extends SampleActivityBase {
 
     public static final String TAG = "MainActivity";
 
-    // Whether the Log Fragment is currently shown
-    private boolean mLogShown;
-    private Button chooseFile;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

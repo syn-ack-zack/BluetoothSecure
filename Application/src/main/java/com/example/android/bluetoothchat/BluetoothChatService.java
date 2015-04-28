@@ -24,48 +24,14 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.widget.Toast;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.CharStreams;
-import com.google.common.io.Closeables;
-
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
-
-import javax.crypto.KeyAgreement;
-import javax.crypto.SecretKey;
-import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHParameterSpec;
-import javax.crypto.spec.DHPublicKeySpec;
-import javax.crypto.spec.SecretKeySpec;
 
 /**
  * This class does all the work for setting up and managing Bluetooth
@@ -103,22 +69,25 @@ public class BluetoothChatService {
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
 
     //Crypto Globals
-    private DHPublicKey clientPublicKey;
+    private BigInteger serverPrivate = null;
+    private BigInteger serverPublic = null;
+
+    private BigInteger clientPrivate = null;
+    private BigInteger clientPublic = null;
+
+    private BigInteger clientSharedKey = null;
+    private BigInteger serverSharedKey = null;
+
     private boolean isServer = true;
     private boolean needToSendClient = false;
-    KeyPairGenerator clientKeyGen = null;
-    KeyAgreement clientKeyAgree = null;
-    Key clientSharedKey = null;
 
 
-
-    public void sendClientKeyInfo(PublicKey key){
+    public void sendClientKeyInfo(byte[] key){
 
         // Get the message bytes and tell the BluetoothChatService to write
-        byte[] bKey = key.getEncoded();
         try {
             write("PUBLIC".getBytes());
-            write(bKey);
+            write(key);
             write("EOF".getBytes());
         }
         catch(Exception e){
@@ -128,65 +97,10 @@ public class BluetoothChatService {
 
     public void ClientDHSetup(){
 
-        clientKeyAgree = null;
+        clientPrivate = new BigInteger(2048, new SecureRandom());
+        clientPublic = Constants.g.modPow(clientPrivate,Constants.p);
 
-        DHParameterSpec dhParams = new DHParameterSpec(Constants.p, Constants.g);
-
-        KeyPairGenerator keyGenerator = null;
-        try {
-            keyGenerator = KeyPairGenerator.getInstance("DH");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            keyGenerator.initialize(dhParams);
-        } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        }
-
-        KeyPair kpair = keyGenerator.generateKeyPair();
-
-        DHParameterSpec params =
-                ((javax.crypto.interfaces.DHPublicKey) kpair.getPublic()).getParams();
-
-
-        try {
-            clientKeyGen = KeyPairGenerator.getInstance("DH","BC");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        }
-
-        if (clientKeyGen != null) {
-            try {
-                clientKeyGen.initialize(dhParams,new SecureRandom());
-            } catch (InvalidAlgorithmParameterException e) {
-                e.printStackTrace();
-            }
-        }
-
-        try {
-            clientKeyAgree = KeyAgreement.getInstance("DH","BC");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        }
-
-        KeyPair clientPair = clientKeyGen.generateKeyPair();
-        DHPublicKey clientPublic = (DHPublicKey) clientPair.getPublic();
-        sendClientKeyInfo(clientPublic);
-
-
-        try {
-            clientKeyAgree.init(clientPair.getPrivate());
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-
+        sendClientKeyInfo(clientPublic.toByteArray());
     }
 
 
@@ -327,93 +241,26 @@ public class BluetoothChatService {
 
     }
 
-    public Key getSharedKey(byte[] serverKey){
-        DHPublicKey serverPublic = null;
-        KeyFactory kfactory = null;
-        try {
-           kfactory = KeyFactory.getInstance("DiffieHellman");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+    public BigInteger getSharedKey(byte[] serverPublic){
 
-        if(serverKey != null) {
-            KeySpec keySpec = new DHPublicKeySpec(new BigInteger(serverKey), Constants.p, Constants.g);
-            try {
-                serverPublic = (DHPublicKey) kfactory.generatePublic(keySpec);
-            } catch (InvalidKeySpecException e) {
-                e.printStackTrace();
-            }
-        }
-
-        Key sharedKey = null;
-        try {
-            clientKeyAgree.doPhase(serverPublic,true);
-            try {
-                sharedKey = clientKeyAgree.generateSecret("AES");
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
+        BigInteger sharedKey = new BigInteger(serverPublic).modPow(clientPrivate,Constants.p);
+        sharedKey = new BigInteger(Arrays.copyOfRange(sharedKey.toByteArray(),0,24));
 
         return sharedKey;
     }
 
-    public Key DHSetup(BigInteger g, BigInteger p, DHPublicKey clientPublic){
+    public BigInteger DHSetup(BigInteger g, BigInteger p, byte[] clientPublic){
 
-        DHParameterSpec dhParams = new DHParameterSpec(p, g);
+        serverPrivate = new BigInteger(2048, new SecureRandom());
+        serverPublic = Constants.g.modPow(serverPrivate,Constants.p);
 
-        KeyPairGenerator serverKeyGen = null;
-        try {
-            serverKeyGen = KeyPairGenerator.getInstance("DH","BC");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        }
+        BigInteger sharedKey = new BigInteger(clientPublic).modPow(serverPrivate,Constants.p);
 
-        if (serverKeyGen != null) {
-            try {
-                serverKeyGen.initialize(dhParams,new SecureRandom());
-            } catch (InvalidAlgorithmParameterException e) {
-                e.printStackTrace();
-            }
-        }
+        sharedKey = new BigInteger(Arrays.copyOfRange(sharedKey.toByteArray(),0,24));
 
-        KeyAgreement serverKeyAgree = null;
-        try {
-            serverKeyAgree = KeyAgreement.getInstance("DH","BC");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        }
-
-        KeyPair serverPair = serverKeyGen.generateKeyPair();
-
-        write(serverPair.getPublic().getEncoded());
-
-        try {
-            serverKeyAgree.init(serverPair.getPrivate());
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-        Key sharedKey = null;
-        try {
-            serverKeyAgree.doPhase(clientPublic,true);
-            try {
-                sharedKey = serverKeyAgree.generateSecret("AES");
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
+        write(serverPublic.toByteArray());
 
         return sharedKey;
-
     }
 
 
@@ -654,7 +501,7 @@ public class BluetoothChatService {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
-        private Key sharedKey;
+        private BigInteger sharedKey;
 
         public ConnectedThread(BluetoothSocket socket, String socketType) {
 
@@ -728,24 +575,9 @@ public class BluetoothChatService {
                                 publicIndex += 6;
                                 byte[] publicKey = Arrays.copyOfRange(fileByte,publicIndex,eofIndex);
 
-                                KeyFactory kfactory = null;
-                                try {
-                                    kfactory = KeyFactory.getInstance("DiffieHellman");
-                                } catch (NoSuchAlgorithmException e) {
-                                    e.printStackTrace();
-                                }
+                                serverSharedKey = DHSetup(Constants.g, Constants.p, publicKey);
 
-                                if(publicKey != null) {
-                                    KeySpec keySpec = new DHPublicKeySpec(new BigInteger(publicKey), Constants.p, Constants.g);
-                                    try {
-                                       clientPublicKey = (DHPublicKey) kfactory.generatePublic(keySpec);
-                                    } catch (InvalidKeySpecException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                                sharedKey = DHSetup(Constants.g, Constants.p, clientPublicKey);
-
-                                mHandler.obtainMessage(Constants.KEY_RECEIVED, sharedKey.getEncoded().length, -1, sharedKey.getEncoded())
+                                mHandler.obtainMessage(Constants.KEY_RECEIVED, serverSharedKey.toByteArray().length, -1, serverSharedKey.toByteArray())
                                         .sendToTarget();
 
                                 out.reset();
@@ -762,19 +594,19 @@ public class BluetoothChatService {
                                 publicOut.write(buf);
                             }
 
-                            byte[] publicKey = publicOut.toByteArray();
+                            byte[] serverPublic = publicOut.toByteArray();
 
-                            clientSharedKey = getSharedKey(publicKey);
+                            clientSharedKey = getSharedKey(serverPublic);
 
-                            if (clientSharedKey != null && clientSharedKey.getEncoded().length > 0) {
-                                mHandler.obtainMessage(Constants.KEY_RECEIVED, clientSharedKey.getEncoded().length, -1, clientSharedKey.getEncoded())
+                            if (clientSharedKey != null && clientSharedKey.toByteArray().length > 0) {
+                                mHandler.obtainMessage(Constants.KEY_RECEIVED, clientSharedKey.toByteArray().length, -1, clientSharedKey.toByteArray())
                                         .sendToTarget();
                             }
 
                         }
                     }
 
-                    if(sharedKey != null) {
+                    if(serverSharedKey != null || clientSharedKey != null) {
                         // Read from the IlnputStream
                         if (mmInStream.available() > 0) {
                             while (mmInStream.available() > 0) {
