@@ -24,6 +24,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.widget.Toast;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
@@ -37,12 +38,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import javax.crypto.KeyAgreement;
+import javax.crypto.SecretKey;
+import javax.crypto.interfaces.DHPublicKey;
+import javax.crypto.spec.DHParameterSpec;
+import javax.crypto.spec.DHPublicKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * This class does all the work for setting up and managing Bluetooth
@@ -78,6 +101,94 @@ public class BluetoothChatService {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+
+    //Crypto Globals
+    private DHPublicKey clientPublicKey;
+    private boolean isServer = true;
+    private boolean needToSendClient = false;
+    KeyPairGenerator clientKeyGen = null;
+    KeyAgreement clientKeyAgree = null;
+    Key clientSharedKey = null;
+
+
+
+    public void sendClientKeyInfo(PublicKey key){
+
+        // Get the message bytes and tell the BluetoothChatService to write
+        byte[] bKey = key.getEncoded();
+        try {
+            write("PUBLIC".getBytes());
+            write(bKey);
+            write("EOF".getBytes());
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void ClientDHSetup(){
+
+        clientKeyAgree = null;
+
+        DHParameterSpec dhParams = new DHParameterSpec(Constants.p, Constants.g);
+
+        KeyPairGenerator keyGenerator = null;
+        try {
+            keyGenerator = KeyPairGenerator.getInstance("DH");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            keyGenerator.initialize(dhParams);
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
+
+        KeyPair kpair = keyGenerator.generateKeyPair();
+
+        DHParameterSpec params =
+                ((javax.crypto.interfaces.DHPublicKey) kpair.getPublic()).getParams();
+
+
+        try {
+            clientKeyGen = KeyPairGenerator.getInstance("DH","BC");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }
+
+        if (clientKeyGen != null) {
+            try {
+                clientKeyGen.initialize(dhParams,new SecureRandom());
+            } catch (InvalidAlgorithmParameterException e) {
+                e.printStackTrace();
+            }
+        }
+
+        try {
+            clientKeyAgree = KeyAgreement.getInstance("DH","BC");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }
+
+        KeyPair clientPair = clientKeyGen.generateKeyPair();
+        DHPublicKey clientPublic = (DHPublicKey) clientPair.getPublic();
+        sendClientKeyInfo(clientPublic);
+
+
+        try {
+            clientKeyAgree.init(clientPair.getPrivate());
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
 
     /**
      * Constructor. Prepares a new BluetoothChat session.
@@ -213,7 +324,98 @@ public class BluetoothChatService {
         mHandler.sendMessage(msg);
 
         setState(STATE_CONNECTED);
+
     }
+
+    public Key getSharedKey(byte[] serverKey){
+        DHPublicKey serverPublic = null;
+        KeyFactory kfactory = null;
+        try {
+           kfactory = KeyFactory.getInstance("DiffieHellman");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        if(serverKey != null) {
+            KeySpec keySpec = new DHPublicKeySpec(new BigInteger(serverKey), Constants.p, Constants.g);
+            try {
+                serverPublic = (DHPublicKey) kfactory.generatePublic(keySpec);
+            } catch (InvalidKeySpecException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Key sharedKey = null;
+        try {
+            clientKeyAgree.doPhase(serverPublic,true);
+            try {
+                sharedKey = clientKeyAgree.generateSecret("AES");
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        }
+
+        return sharedKey;
+    }
+
+    public Key DHSetup(BigInteger g, BigInteger p, DHPublicKey clientPublic){
+
+        DHParameterSpec dhParams = new DHParameterSpec(p, g);
+
+        KeyPairGenerator serverKeyGen = null;
+        try {
+            serverKeyGen = KeyPairGenerator.getInstance("DH","BC");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }
+
+        if (serverKeyGen != null) {
+            try {
+                serverKeyGen.initialize(dhParams,new SecureRandom());
+            } catch (InvalidAlgorithmParameterException e) {
+                e.printStackTrace();
+            }
+        }
+
+        KeyAgreement serverKeyAgree = null;
+        try {
+            serverKeyAgree = KeyAgreement.getInstance("DH","BC");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }
+
+        KeyPair serverPair = serverKeyGen.generateKeyPair();
+
+        write(serverPair.getPublic().getEncoded());
+
+        try {
+            serverKeyAgree.init(serverPair.getPrivate());
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        }
+
+        Key sharedKey = null;
+        try {
+            serverKeyAgree.doPhase(clientPublic,true);
+            try {
+                sharedKey = serverKeyAgree.generateSecret("AES");
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        }
+
+        return sharedKey;
+
+    }
+
 
     /**
      * Stop all threads
@@ -259,6 +461,7 @@ public class BluetoothChatService {
         // Perform the write unsynchronized
         r.write(out);
     }
+
 
     /**
      * Indicate that the connection attempt failed and notify the UI Activity.
@@ -316,6 +519,7 @@ public class BluetoothChatService {
             } catch (IOException e) {
             }
             mmServerSocket = tmp;
+            isServer = true;
         }
 
         public void run() {
@@ -355,7 +559,6 @@ public class BluetoothChatService {
                     }
                 }
             }
-
         }
 
         public void cancel() {
@@ -397,6 +600,9 @@ public class BluetoothChatService {
 
             }
             mmSocket = tmp;
+            isServer = false;
+            needToSendClient = true;
+
         }
 
         public void run() {
@@ -448,6 +654,7 @@ public class BluetoothChatService {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
+        private Key sharedKey;
 
         public ConnectedThread(BluetoothSocket socket, String socketType) {
 
@@ -465,6 +672,7 @@ public class BluetoothChatService {
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
+
         }
 
         public int findArray(byte[] largeArray, byte[] subArray) {
@@ -482,7 +690,7 @@ public class BluetoothChatService {
         /* Sub array found - return its index */
                 return i;
             }
-    /* Return default value */
+        /* Return default value */
             return -1;
         }
 
@@ -493,48 +701,118 @@ public class BluetoothChatService {
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
-                    // Read from the IlnputStream
-                    List<Byte> bufferList = new ArrayList<Byte>();
-                    if(mmInStream.available() > 0){
-                        while(mmInStream.available() > 0){
+
+                    if(needToSendClient){
+                        if(isServer == false){
+                            ClientDHSetup();
+                            needToSendClient = false;
+                        }
+                    }
+                    if(isServer == true){
+                        if (mmInStream.available() > 0) {
+                            while (mmInStream.available() > 0) {
                                 byte[] buf = new byte[mmInStream.available()];
                                 mmInStream.read(buf);
                                 out.write(buf);
                             }
+
+
+                            byte[] fileByte = out.toByteArray();
+                            byte[] clientPub = "PUBLIC".getBytes();
+                            byte[] eof = "EOF".getBytes();
+
+                            int publicIndex = findArray(fileByte,clientPub);
+                            int eofIndex = findArray(fileByte,eof);
+
+                            if(publicIndex != -1 && eofIndex != -1){
+                                publicIndex += 6;
+                                byte[] publicKey = Arrays.copyOfRange(fileByte,publicIndex,eofIndex);
+
+                                KeyFactory kfactory = null;
+                                try {
+                                    kfactory = KeyFactory.getInstance("DiffieHellman");
+                                } catch (NoSuchAlgorithmException e) {
+                                    e.printStackTrace();
+                                }
+
+                                if(publicKey != null) {
+                                    KeySpec keySpec = new DHPublicKeySpec(new BigInteger(publicKey), Constants.p, Constants.g);
+                                    try {
+                                       clientPublicKey = (DHPublicKey) kfactory.generatePublic(keySpec);
+                                    } catch (InvalidKeySpecException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                sharedKey = DHSetup(Constants.g, Constants.p, clientPublicKey);
+
+                                mHandler.obtainMessage(Constants.KEY_RECEIVED, sharedKey.getEncoded().length, -1, sharedKey.getEncoded())
+                                        .sendToTarget();
+
+                                out.reset();
+                            }
+
+                        }
+                    }
+                    if(isServer == false && clientSharedKey == null){
+                        if (mmInStream.available() > 0) {
+                            ByteArrayOutputStream publicOut = new ByteArrayOutputStream();
+                            while (mmInStream.available() > 0) {
+                                byte[] buf = new byte[mmInStream.available()];
+                                mmInStream.read(buf);
+                                publicOut.write(buf);
+                            }
+
+                            byte[] publicKey = publicOut.toByteArray();
+
+                            clientSharedKey = getSharedKey(publicKey);
+
+                            if (clientSharedKey != null && clientSharedKey.getEncoded().length > 0) {
+                                mHandler.obtainMessage(Constants.KEY_RECEIVED, clientSharedKey.getEncoded().length, -1, clientSharedKey.getEncoded())
+                                        .sendToTarget();
+                            }
+
+                        }
                     }
 
-                    byte[] fileByte = out.toByteArray();
-
-                    byte[] pay = "PAYLOAD".getBytes();
-                    byte[] eof = "EOF".getBytes();
-
-                    int nameIndex = findArray(fileByte,pay);
-                    int eofIndex = findArray(fileByte,eof);
-
-                    if(nameIndex != -1 && eofIndex != -1) {
-
-                        int fileIndex = nameIndex + 7;
-                        byte[] name = new byte[nameIndex];
-                        for (int i = 0; i < nameIndex; i++) {
-                            name[i] = fileByte[i];
+                    if(sharedKey != null) {
+                        // Read from the IlnputStream
+                        if (mmInStream.available() > 0) {
+                            while (mmInStream.available() > 0) {
+                                byte[] buf = new byte[mmInStream.available()];
+                                mmInStream.read(buf);
+                                out.write(buf);
+                            }
                         }
 
-                        byte[] file = Arrays.copyOfRange(fileByte, fileIndex, eofIndex);
+                        byte[] fileByte = out.toByteArray();
 
-//                        byte[] name = bufferList.substring(0, nameIndex).getBytes();
-//                        byte[] file = bufferList.substring(fileIndex, eofIndex).getBytes();
+                        byte[] pay = "PAYLOAD".getBytes();
+                        byte[] eof = "EOF".getBytes();
 
-                        if (name != null && name.length > 0) {
-                            mHandler.obtainMessage(Constants.FILE_NAME, name.length, -1, name)
-                                    .sendToTarget();
+                        int nameIndex = findArray(fileByte, pay);
+                        int eofIndex = findArray(fileByte, eof);
+
+                        if (nameIndex != -1 && eofIndex != -1) {
+
+                            int fileIndex = nameIndex + 7;
+                            byte[] name = new byte[nameIndex];
+                            for (int i = 0; i < nameIndex; i++) {
+                                name[i] = fileByte[i];
+                            }
+
+                            byte[] file = Arrays.copyOfRange(fileByte, fileIndex, eofIndex);
+
+                            if (name != null && name.length > 0) {
+                                mHandler.obtainMessage(Constants.FILE_NAME, name.length, -1, name)
+                                        .sendToTarget();
+                            }
+                            if (file != null && file.length > 0 && fileNameSent == false) {
+                                mHandler.obtainMessage(Constants.MESSAGE_READ, file.length, -1, file)
+                                        .sendToTarget();
+                                fileNameSent = true;
+                                out.reset();
+                            }
                         }
-                        if (file != null && file.length > 0 && fileNameSent == false) {
-                            mHandler.obtainMessage(Constants.MESSAGE_READ, file.length, -1, file)
-                                    .sendToTarget();
-                            fileNameSent = true;
-                            out.reset();
-                        }
-
                     }
                 } catch (IOException e) {
 
@@ -566,6 +844,7 @@ public class BluetoothChatService {
         public void cancel() {
             try {
                 mmSocket.close();
+                clientSharedKey = null;
             } catch (IOException e) {
 
             }

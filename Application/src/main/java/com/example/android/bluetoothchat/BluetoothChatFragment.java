@@ -32,6 +32,7 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -54,8 +55,35 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Arrays;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyAgreement;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.interfaces.DHPublicKey;
+import javax.crypto.spec.DHParameterSpec;
+import javax.crypto.spec.DHPublicKeySpec;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * This fragment controls Bluetooth to communicate with other devices.
@@ -68,13 +96,13 @@ public class BluetoothChatFragment extends Fragment {
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
     private static final int REQUEST_CONNECT_DEVICE_INSECURE = 2;
     private static final int REQUEST_ENABLE_BT = 3;
-    private static final int FILE_CHOOSEN = 4;
+    private static final int FILE_CHOSEN = 4;
 
-    // Layout Views
-    private ListView mConversationView;
-    private EditText mOutEditText;
     private Button mSendButton;
     private Button chooseFile;
+    private byte[] serverKey;
+    KeyAgreement clientKeyAgree;
+    byte[] sharedKey;
 
     /**
      * Name of the connected device
@@ -85,11 +113,6 @@ public class BluetoothChatFragment extends Fragment {
      * Array adapter for the conversation thread
      */
     private ArrayAdapter<String> mConversationArrayAdapter;
-
-    /**
-     * String buffer for outgoing messages
-     */
-    private StringBuffer mOutStringBuffer;
 
     /**
      * Local Bluetooth adapter
@@ -211,16 +234,13 @@ public class BluetoothChatFragment extends Fragment {
 
                 // Set these depending on your use case. These are the defaults.
                 i.putExtra(FilePickerActivity.EXTRA_MODE, FilePickerActivity.MODE_FILE);
-                startActivityForResult(i, FILE_CHOOSEN);
+                startActivityForResult(i, FILE_CHOSEN);
             }
         });
 
 
         // Initialize the BluetoothChatService to perform bluetooth connections
         mChatService = new BluetoothChatService(getActivity(), mHandler);
-
-        // Initialize the buffer for outgoing messages
-        mOutStringBuffer = new StringBuffer("");
     }
 
     /**
@@ -256,6 +276,25 @@ public class BluetoothChatFragment extends Fragment {
                 fileInputStream.read(bFile);
                 fileInputStream.close();
 
+
+                try {
+                    bFile = encrypt(bFile,new SecretKeySpec(sharedKey,"AES"),new IvParameterSpec("1234567890123456".getBytes()));
+                } catch (IllegalBlockSizeException e) {
+                    e.printStackTrace();
+                } catch (BadPaddingException e) {
+                    e.printStackTrace();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (NoSuchPaddingException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeyException e) {
+                    e.printStackTrace();
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                } catch (InvalidAlgorithmParameterException e) {
+                    e.printStackTrace();
+                }
+
                 byte[] delimit = "PAYLOAD".getBytes();
                 byte[] eof = "EOF".getBytes();
 
@@ -267,8 +306,10 @@ public class BluetoothChatFragment extends Fragment {
                 outputStream.write(bFile);
                 outputStream.write(eof);
                 byte output[] = outputStream.toByteArray();
+
                 mChatService.write(output);
                 outputStream.flush();
+                outputStream.reset();
             }
             catch(Exception e){
                     e.printStackTrace();
@@ -276,27 +317,13 @@ public class BluetoothChatFragment extends Fragment {
         }
     }
 
-//    /**
-//     * The action listener for the EditText widget, to listen for the return key
-//     */
-//    private TextView.OnEditorActionListener mWriteListener
-//            = new TextView.OnEditorActionListener() {
-//        public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
-//            // If the action is a key-up event on the return key, send the message
-//            if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
-//                String message = view.getText().toString();
-//                sendMessage(message);
-//            }
-//            return true;
-//        }
-//    };
-
     /**
      * Updates the status on the action bar.
      *
      * @param resId a string resource ID
      */
     private void setStatus(int resId) {
+
         FragmentActivity activity = getActivity();
         if (null == activity) {
             return;
@@ -349,11 +376,28 @@ public class BluetoothChatFragment extends Fragment {
                     }
                     break;
                 case Constants.MESSAGE_WRITE:
-
                     break;
 
                 case Constants.MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;
+
+                    try {
+                        readBuf = decrypt(readBuf,new SecretKeySpec(sharedKey,"AES"),new IvParameterSpec("1234567890123456".getBytes()));
+                    } catch (InvalidKeyException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchPaddingException e) {
+                        e.printStackTrace();
+                    } catch (IllegalBlockSizeException e) {
+                        e.printStackTrace();
+                    } catch (BadPaddingException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (InvalidAlgorithmParameterException e) {
+                        e.printStackTrace();
+                    }
                     // construct a string from the valid bytes in the buffer
                     try {
                         //convert array of bytes into file
@@ -389,6 +433,16 @@ public class BluetoothChatFragment extends Fragment {
                 case Constants.FILE_NAME:
                     byte[] bReceivedFile = (byte[]) msg.obj;
                     fileName = new String(bReceivedFile);
+                    break;
+                case Constants.KEY_RECEIVED:
+                    sharedKey = (byte[]) msg.obj;
+                    if (null != activity) {
+                        Toast.makeText(activity, "Key " + new BigInteger(sharedKey).toString()
+                                + mConnectedDeviceName, Toast.LENGTH_LONG).show();
+                    }
+                    break;
+
+
             }
         }
     };
@@ -418,7 +472,7 @@ public class BluetoothChatFragment extends Fragment {
                             Toast.LENGTH_SHORT).show();
                     getActivity().finish();
                 }
-            case FILE_CHOOSEN:
+            case FILE_CHOSEN:
                 if (requestCode == 4 && resultCode == Activity.RESULT_OK) {
                         Uri uri = data.getData();
                         int index = uri.getPath().lastIndexOf("/");
@@ -429,7 +483,7 @@ public class BluetoothChatFragment extends Fragment {
     }
 
     /**
-     * Establish connection with other divice
+     * Establish connection with other device
      *
      * @param data   An {@link Intent} with {@link DeviceListActivity#EXTRA_DEVICE_ADDRESS} extra.
      * @param secure Socket Security type - Secure (true) , Insecure (false)
@@ -442,7 +496,34 @@ public class BluetoothChatFragment extends Fragment {
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
         mChatService.connect(device, secure);
+
     }
+
+    public static byte[] encrypt(byte[] message, final Key key, final IvParameterSpec iv) throws IllegalBlockSizeException,
+            BadPaddingException, NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeyException,
+            UnsupportedEncodingException, InvalidAlgorithmParameterException {
+
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE,key,iv);
+
+        byte[] raw = cipher.doFinal(message);
+
+        return raw;
+    }
+
+    public static  byte[] decrypt(byte[] encrypted,final Key key, final IvParameterSpec iv) throws InvalidKeyException,
+            NoSuchAlgorithmException, NoSuchPaddingException,
+            IllegalBlockSizeException, BadPaddingException, IOException, InvalidAlgorithmParameterException {
+
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key,iv);
+
+        byte[] stringBytes = cipher.doFinal(encrypted);
+
+        return stringBytes;
+    }
+
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {

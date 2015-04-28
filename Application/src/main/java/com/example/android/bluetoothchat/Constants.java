@@ -16,6 +16,8 @@
 
 package com.example.android.bluetoothchat;
 
+import java.math.BigInteger;
+
 /**
  * Defines several constants used between {@link BluetoothChatService} and the UI.
  */
@@ -28,6 +30,12 @@ public interface Constants {
     public static final int MESSAGE_DEVICE_NAME = 4;
     public static final int MESSAGE_TOAST = 5;
     public static final int FILE_NAME = 6;
+    public static final int KEY_RECEIVED = 7;
+    public static final int START_DH = 8;
+
+    final BigInteger p = new BigInteger("FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C915728E5A8AACAA68FFFFFFFFFFFFFFFF",16);
+    final BigInteger g = new BigInteger("2");
+
 
     // Key names received from the BluetoothChatService Handler
     public static final String DEVICE_NAME = "device_name";
