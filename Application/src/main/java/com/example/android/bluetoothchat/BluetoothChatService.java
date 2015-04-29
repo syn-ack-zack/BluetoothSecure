@@ -82,6 +82,9 @@ public class BluetoothChatService {
     private boolean needToSendClient = false;
 
 
+    /*
+        Function takes client public key and writes over bluetooth socket to server for DH key exchange
+     */
     public void sendClientKeyInfo(byte[] key){
 
         // Get the message bytes and tell the BluetoothChatService to write
@@ -95,6 +98,9 @@ public class BluetoothChatService {
         }
     }
 
+    /*
+        Computes the private and public pair for the client, and sends it's public key to server
+     */
     public void ClientDHSetup(){
 
         clientPrivate = new BigInteger(2048, new SecureRandom());
@@ -241,23 +247,35 @@ public class BluetoothChatService {
 
     }
 
+    /*
+        Takes received server public key and computes sharedKey for the client
+     */
     public BigInteger getSharedKey(byte[] serverPublic){
 
         BigInteger sharedKey = new BigInteger(serverPublic).modPow(clientPrivate,Constants.p);
+
+        //Time the key for AES compatibility
         sharedKey = new BigInteger(Arrays.copyOfRange(sharedKey.toByteArray(),0,24));
 
         return sharedKey;
     }
 
+    /*
+        Computes DH public and private pair for server and computes shared Key
+     */
     public BigInteger DHSetup(BigInteger g, BigInteger p, byte[] clientPublic){
 
+        //Generate pair
         serverPrivate = new BigInteger(2048, new SecureRandom());
         serverPublic = Constants.g.modPow(serverPrivate,Constants.p);
 
+        //Use client Public to generate shared key
         BigInteger sharedKey = new BigInteger(clientPublic).modPow(serverPrivate,Constants.p);
 
+        //Trim the key for AES compatibility
         sharedKey = new BigInteger(Arrays.copyOfRange(sharedKey.toByteArray(),0,24));
 
+        //Write server public key to client so client can compute the shared KEy
         write(serverPublic.toByteArray());
 
         return sharedKey;
@@ -549,13 +567,19 @@ public class BluetoothChatService {
             while (true) {
                 try {
 
+                    //If client public key has yet to be sent
                     if(needToSendClient){
+                        //and we are not acting as "server'
                         if(isServer == false){
+                            //We are server side client, so setup DH and send to server
                             ClientDHSetup();
+                            //Sent client info, so let's check that off
                             needToSendClient = false;
                         }
                     }
+                    //If we are not a server side client
                     if(isServer == true){
+                        //And there is something to read
                         if (mmInStream.available() > 0) {
                             while (mmInStream.available() > 0) {
                                 byte[] buf = new byte[mmInStream.available()];
@@ -563,28 +587,33 @@ public class BluetoothChatService {
                                 out.write(buf);
                             }
 
-
+                            //Computer flags to check for delimitation
                             byte[] fileByte = out.toByteArray();
                             byte[] clientPub = "PUBLIC".getBytes();
                             byte[] eof = "EOF".getBytes();
 
+                            //Get index of our public key start and end
                             int publicIndex = findArray(fileByte,clientPub);
                             int eofIndex = findArray(fileByte,eof);
 
                             if(publicIndex != -1 && eofIndex != -1){
                                 publicIndex += 6;
+                                //Extract out public key
                                 byte[] publicKey = Arrays.copyOfRange(fileByte,publicIndex,eofIndex);
 
+                                //Compute server shared key with the now obtained client public key
                                 serverSharedKey = DHSetup(Constants.g, Constants.p, publicKey);
 
+                                //Let chat fragment know of our computed key so it can be set and used for AES decrypt/encrypt
                                 mHandler.obtainMessage(Constants.KEY_RECEIVED, serverSharedKey.toByteArray().length, -1, serverSharedKey.toByteArray())
                                         .sendToTarget();
-
+                                //Clear the buffer
                                 out.reset();
                             }
 
                         }
                     }
+                    //If we are server side client and client shared key has not been computed yet
                     if(isServer == false && clientSharedKey == null){
                         if (mmInStream.available() > 0) {
                             ByteArrayOutputStream publicOut = new ByteArrayOutputStream();
@@ -594,10 +623,13 @@ public class BluetoothChatService {
                                 publicOut.write(buf);
                             }
 
+                            //Obtain server public key
                             byte[] serverPublic = publicOut.toByteArray();
 
+                            //Finish up the DH process and compute the client's shared Key
                             clientSharedKey = getSharedKey(serverPublic);
 
+                            //Notify chat fragment so global can be set and used for AES encrypt/decrypt
                             if (clientSharedKey != null && clientSharedKey.toByteArray().length > 0) {
                                 mHandler.obtainMessage(Constants.KEY_RECEIVED, clientSharedKey.toByteArray().length, -1, clientSharedKey.toByteArray())
                                         .sendToTarget();
@@ -606,6 +638,7 @@ public class BluetoothChatService {
                         }
                     }
 
+                    //If a server or client key has been computed then we are safe to listen for a file coming in
                     if(serverSharedKey != null || clientSharedKey != null) {
                         // Read from the IlnputStream
                         if (mmInStream.available() > 0) {
@@ -618,26 +651,32 @@ public class BluetoothChatService {
 
                         byte[] fileByte = out.toByteArray();
 
+                        //make flags for buffer delimination
                         byte[] pay = "PAYLOAD".getBytes();
                         byte[] eof = "EOF".getBytes();
 
+                        //get indexes for file name and payload
                         int nameIndex = findArray(fileByte, pay);
                         int eofIndex = findArray(fileByte, eof);
 
                         if (nameIndex != -1 && eofIndex != -1) {
 
+                            //Get file name and put into byte array
                             int fileIndex = nameIndex + 7;
                             byte[] name = new byte[nameIndex];
                             for (int i = 0; i < nameIndex; i++) {
                                 name[i] = fileByte[i];
                             }
 
+                            //Extract out file payload
                             byte[] file = Arrays.copyOfRange(fileByte, fileIndex, eofIndex);
 
+                            //Notify chat fragment of file name so it can be written to local storage
                             if (name != null && name.length > 0) {
                                 mHandler.obtainMessage(Constants.FILE_NAME, name.length, -1, name)
                                         .sendToTarget();
                             }
+                            //Notify chat fragment of received file so it can be written out to local device
                             if (file != null && file.length > 0 && fileNameSent == false) {
                                 mHandler.obtainMessage(Constants.MESSAGE_READ, file.length, -1, file)
                                         .sendToTarget();

@@ -174,7 +174,7 @@ public class BluetoothChatFragment extends Fragment {
     }
 
     /**
-     * Set up the UI and background operations for chat.
+     * Set up the UI and background operations for file transfer.
      */
     private void setupChat() {
 
@@ -197,6 +197,9 @@ public class BluetoothChatFragment extends Fragment {
             }
         });
 
+        /*
+           Listener for file picker activity, launches file selection Activity on press
+         */
         chooseFile.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -229,7 +232,7 @@ public class BluetoothChatFragment extends Fragment {
     }
 
     /**
-     * Sends a message.
+     * Takes file path and reads file from local device and encrypts with AES and sends over bluetooth socket
      *
      */
     private void sendMessage(File userFile) {
@@ -251,6 +254,7 @@ public class BluetoothChatFragment extends Fragment {
 
 
                 try {
+                    //Encrypt with file with AES and computed SharedKey
                     bFile = encrypt(bFile,new SecretKeySpec(sharedKey,"AES"),new IvParameterSpec("1234567890123456".getBytes()));
                 } catch (IllegalBlockSizeException e) {
                     e.printStackTrace();
@@ -268,9 +272,11 @@ public class BluetoothChatFragment extends Fragment {
                     e.printStackTrace();
                 }
 
+                //delimit output stream so server can parse
                 byte[] delimit = "PAYLOAD".getBytes();
                 byte[] eof = "EOF".getBytes();
 
+                //prepare and write to output stream
                 int size = bFile.length + fileName.length() + delimit.length + eof.length;
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream(size);
                 outputStream.flush();
@@ -280,6 +286,7 @@ public class BluetoothChatFragment extends Fragment {
                 outputStream.write(eof);
                 byte output[] = outputStream.toByteArray();
 
+                //write to bluetooth socket
                 mChatService.write(output);
                 outputStream.flush();
                 outputStream.reset();
@@ -351,6 +358,8 @@ public class BluetoothChatFragment extends Fragment {
                 case Constants.MESSAGE_WRITE:
                     break;
 
+                //This case is used when server has read all of a file, passing to client
+                //for decryption and writing to local storage device
                 case Constants.MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;
 
@@ -389,6 +398,8 @@ public class BluetoothChatFragment extends Fragment {
                         e.printStackTrace();
                     }
                     break;
+
+                //Case used to set device name
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
                     mConnectedDeviceName = msg.getData().getString(Constants.DEVICE_NAME);
@@ -397,16 +408,13 @@ public class BluetoothChatFragment extends Fragment {
                                 + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                     }
                     break;
-                case Constants.MESSAGE_TOAST:
-                    if (null != activity) {
-                        Toast.makeText(activity, msg.getData().getString(Constants.TOAST),
-                                Toast.LENGTH_SHORT).show();
-                    }
-                    break;
+                //Case used to set file name of incoming file
                 case Constants.FILE_NAME:
                     byte[] bReceivedFile = (byte[]) msg.obj;
                     fileName = new String(bReceivedFile);
                     break;
+                //When shared key has been computed via DH key exchange, this will set global sharedKey
+                //used for AES decryption and encryption
                 case Constants.KEY_RECEIVED:
                     sharedKey = (byte[]) msg.obj;
                     if (null != activity) {
@@ -471,6 +479,9 @@ public class BluetoothChatFragment extends Fragment {
 
     }
 
+    /*
+        Encryption using AES
+     */
     public static byte[] encrypt(byte[] message, final Key key, final IvParameterSpec iv) throws IllegalBlockSizeException,
             BadPaddingException, NoSuchAlgorithmException,
             NoSuchPaddingException, InvalidKeyException,
@@ -484,6 +495,9 @@ public class BluetoothChatFragment extends Fragment {
         return raw;
     }
 
+    /*
+        Decryption using AES
+     */
     public static  byte[] decrypt(byte[] encrypted,final Key key, final IvParameterSpec iv) throws InvalidKeyException,
             NoSuchAlgorithmException, NoSuchPaddingException,
             IllegalBlockSizeException, BadPaddingException, IOException, InvalidAlgorithmParameterException {
