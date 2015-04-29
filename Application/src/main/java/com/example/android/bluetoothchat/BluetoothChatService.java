@@ -587,7 +587,7 @@ public class BluetoothChatService {
                                 out.write(buf);
                             }
 
-                            //Computer flags to check for delimitation
+                            //Compute our flags to check for delimitation
                             byte[] fileByte = out.toByteArray();
                             byte[] clientPub = "PUBLIC".getBytes();
                             byte[] eof = "EOF".getBytes();
@@ -651,7 +651,7 @@ public class BluetoothChatService {
 
                         byte[] fileByte = out.toByteArray();
 
-                        //make flags for buffer delimination
+                        //make flags for buffer delimitnation
                         byte[] pay = "PAYLOAD".getBytes();
                         byte[] eof = "EOF".getBytes();
 

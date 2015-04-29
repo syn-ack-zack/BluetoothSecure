@@ -31,13 +31,13 @@ public final class R {
 		public static final int selectable_background_filepickertheme = 0x7f020009;
 	}
 	public static final class id {
-		public static final int action_container = 0x7f0a0024;
+		public static final int action_container = 0x7f0a0025;
 		public static final int button_cancel = 0x7f0a001f;
 		public static final int button_container = 0x7f0a001d;
-		public static final int button_create_dir = 0x7f0a0026;
-		public static final int button_go_parent = 0x7f0a0025;
+		public static final int button_create_dir = 0x7f0a0027;
+		public static final int button_go_parent = 0x7f0a0026;
 		public static final int button_ok = 0x7f0a0020;
-		public static final int current_dir = 0x7f0a0027;
+		public static final int current_dir = 0x7f0a0028;
 		public static final int divider = 0x7f0a001e;
 		public static final int edit_text = 0x7f0a001c;
 		public static final int fragment = 0x7f0a0017;

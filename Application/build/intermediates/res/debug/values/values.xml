@@ -72,7 +72,7 @@
     <string name="intro_message">
         <![CDATA[
         
-            This application will demonstrate secure bluetooth file transfer using Diffie Hellman Key Exchange
+            This application will demonstrate secure bluetooth file transfer using Diffie Hellman Key Exchange and 196 bit AES encryption
         
         ]]>
     </string>

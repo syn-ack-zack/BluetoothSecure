@@ -24,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.ViewAnimator;
 
 import com.example.android.common.activities.SampleActivityBase;
@@ -39,11 +40,11 @@ import com.nononsenseapps.filepicker.FilePickerActivity;
 public class MainActivity extends SampleActivityBase {
 
     public static final String TAG = "MainActivity";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        TextView textView = (TextView) findViewById(R.id.fileView);
 
         if (savedInstanceState == null) {
               FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();

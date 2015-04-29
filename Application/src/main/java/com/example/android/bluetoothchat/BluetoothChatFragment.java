@@ -37,6 +37,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.nononsenseapps.filepicker.FilePickerActivity;
 import java.io.ByteArrayOutputStream;
@@ -64,6 +65,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class BluetoothChatFragment extends Fragment {
 
     private static final String TAG = "BluetoothChatFragment";
+    private TextView fileView;
 
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
@@ -99,6 +101,7 @@ public class BluetoothChatFragment extends Fragment {
 
     private File userFile = null;
     private String fileName = null;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -458,6 +461,9 @@ public class BluetoothChatFragment extends Fragment {
                         int index = uri.getPath().lastIndexOf("/");
                         fileName = uri.getPath().substring(index + 1);
                         userFile = new File(uri.getPath());
+
+                        TextView fileView = (TextView) getView().findViewById(R.id.fileView);
+                        fileView.setText("Selected file to be sent" + "\n" + fileName);
                     }
         }
     }
