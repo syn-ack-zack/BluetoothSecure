@@ -1,3 +1,4 @@
-# BluetoothSecure
+# BluetoothSecure  
+## A Secure way to transfer files over bluetooth. 
 
-Bluetooth is a short range wireless communications technology that can be used for data  transfer on many different platforms. In this project, you’ll explore the Bluetooth package in   Android and determine how to securely transfer data using the phone’s Bluetooth stack. Next,   you’ll need to manipulate the security functionality such that it uses your own key for   encrypting the data file to be transfered. Finally, you’ll add functionality to allow two smart   phones to construct a mutual key using Diffie-Hellman key agreement, assuming physical   proximity (Note: you can assume that no man in the middle attacks are possible, so no   signatures are needed). This key would then be used by one phone to encrypt a data file and   transfer it to the other phone, where it would be used for decryption.
+Android Application to demonstrate the use of Diffie-Hellman key exchange for securely setting up an encrypted bluetooth connection. Once the connection is established file transfers may take place between the two participants. 
